@@ -237,7 +237,7 @@ export default definePlugin({
     authors: [Devs.philosolog],
     tags: ["Chat", "Appearance"],
     settings,
-
+    restartNeeded: true,
     renderMessageAccessory({ message }) {
         if (message[IsInlineReply] || message.type !== 0 && message.type !== 19) return null;
 
