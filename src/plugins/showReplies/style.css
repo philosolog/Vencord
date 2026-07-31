@@ -1,0 +1,101 @@
+.vc-show-replies {
+    margin-top: 2px;
+}
+
+.vc-show-replies-toggle,
+.vc-show-replies-branch-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 11px;
+    line-height: 14px;
+}
+
+.vc-show-replies-branch-toggle {
+    margin: 0 0 2px;
+}
+
+.vc-show-replies-branch-toggle-inline {
+    position: absolute;
+    left: 0;
+    margin: 0;
+    transform: translateY(-100%);
+}
+
+.vc-show-replies-toggle svg,
+.vc-show-replies-branch-toggle svg {
+    width: 10px;
+    height: 10px;
+}
+
+.vc-show-replies-toggle:hover,
+.vc-show-replies-branch-toggle:hover {
+    color: var(--text-link);
+    text-decoration: underline;
+}
+
+.vc-show-replies-thread {
+    display: flex;
+    flex-direction: column;
+    margin-top: 2px;
+}
+
+.vc-show-replies-node {
+    min-width: 0;
+}
+
+.vc-show-replies-node-expanded + .vc-show-replies-node {
+    margin-top: 4px;
+}
+
+.vc-show-replies-message {
+    position: relative;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    min-width: 0;
+}
+
+.vc-show-replies-message [class*="repliedMessage"] {
+    display: none;
+}
+
+.vc-show-replies-jump {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    width: 16px;
+    height: 20px;
+    margin-top: 2px;
+    border: 0;
+    padding: 3px 0 0;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.vc-show-replies-jump:hover {
+    color: var(--text-link);
+}
+
+.vc-show-replies-message:hover > .vc-show-replies-jump,
+.vc-show-replies-message:focus-within > .vc-show-replies-jump {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.vc-show-replies-jump svg {
+    width: 12px;
+    height: 12px;
+}
+
+.vc-show-replies-children {
+    margin-left: 16px;
+}
