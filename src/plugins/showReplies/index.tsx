@@ -13,11 +13,15 @@ import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 import { Message } from "@vencord/discord-types";
 import { findComponentByCodeLazy } from "@webpack";
-import { ChannelStore, MessageActions, MessageStore, RelationshipStore, useLayoutEffect, useRef, useState, useStateFromStores } from "@webpack/common";
+import { ChannelStore, MessageActions, MessageStore, React, RelationshipStore, useLayoutEffect, useRef, useState, useStateFromStores } from "@webpack/common";
 
 const ChannelMessage = findComponentByCodeLazy("childrenExecutedCommand:", ".hideAccessories");
 const MessageDisplayCompact = getUserSettingLazy("textAndImages", "messageDisplayCompact")!;
-const IsInlineReply = Symbol();
+let InlineReplyContext: React.Context<boolean>;
+
+function getInlineReplyContext() {
+    return InlineReplyContext ??= React.createContext(false);
+}
 
 interface ReplyNode {
     message: Message;
@@ -72,25 +76,15 @@ function getReplyTree(message: Message, maxDepth: number) {
     return build(message.id, 0);
 }
 
-function withoutReplyHeader(message: Message): Message {
-    return new Proxy(message, {
-        get(target, prop, receiver) {
-            if (prop === "messageReference") return undefined;
-            if (prop === IsInlineReply) return true;
-
-            return Reflect.get(target, prop, receiver);
-        }
-    });
-}
-
 function ReplyThreadNode({ node, compact }: { node: ReplyNode; compact: boolean; }) {
     const [collapsed, setCollapsed] = useState(true);
     const [branchTop, setBranchTop] = useState<number>();
-    const [branchLeft, setBranchLeft] = useState(20);
+    const [branchLeft, setBranchLeft] = useState(16);
     const messageRef = useRef<HTMLDivElement>(null);
     const channel = ChannelStore.getChannel(node.message.channel_id);
     const childCount = node.replies.length;
     const BranchArrow = collapsed ? RightArrow : DownArrow;
+    const InlineReply = getInlineReplyContext();
 
     useLayoutEffect(() => {
         const messageElement = messageRef.current;
@@ -100,7 +94,7 @@ function ReplyThreadNode({ node, compact }: { node: ReplyNode; compact: boolean;
             const content = messageElement.querySelector<HTMLElement>("[class*='messageContent']");
             if (!content) {
                 setBranchTop(undefined);
-                setBranchLeft(20);
+                setBranchLeft(16);
                 return;
             }
 
@@ -142,13 +136,15 @@ function ReplyThreadNode({ node, compact }: { node: ReplyNode; compact: boolean;
                 >
                     <DownArrow />
                 </button>
-                <ChannelMessage
-                    id={`show-replies-${node.message.id}`}
-                    message={withoutReplyHeader(node.message)}
-                    channel={channel}
-                    compact={compact}
-                    subscribeToComponentDispatch={true}
-                />
+                <InlineReply.Provider value={true}>
+                    <ChannelMessage
+                        id={`show-replies-${node.message.id}`}
+                        message={node.message}
+                        channel={channel}
+                        compact={compact}
+                        subscribeToComponentDispatch={true}
+                    />
+                </InlineReply.Provider>
                 {!!childCount && branchTop != null && (
                     <button
                         type="button"
@@ -162,7 +158,7 @@ function ReplyThreadNode({ node, compact }: { node: ReplyNode; compact: boolean;
                         }}
                     >
                         <BranchArrow />
-                        {childCount}
+                        <span>{childCount}</span>
                     </button>
                 )}
             </div>
@@ -171,13 +167,15 @@ function ReplyThreadNode({ node, compact }: { node: ReplyNode; compact: boolean;
                     type="button"
                     className="vc-show-replies-branch-toggle"
                     style={{ marginLeft: branchLeft }}
+                    aria-label={`${collapsed ? "Show" : "Hide"} ${childCount} ${childCount === 1 ? "reply" : "replies"}`}
                     aria-expanded={!collapsed}
                     onClick={e => {
                         e.stopPropagation();
                         setCollapsed(value => !value);
                     }}
                 >
-                    {collapsed ? "Show" : "Hide"} {childCount} {childCount === 1 ? "reply" : "replies"}
+                    <BranchArrow />
+                    <span>{childCount}</span>
                 </button>
             )}
             {!collapsed && !!childCount && (
@@ -201,6 +199,7 @@ function ShowRepliesAccessory({ message }: { message: Message; }) {
     const { maxDepth } = settings.use(["maxDepth"]);
     const replies = useStateFromStores([MessageStore, RelationshipStore], () => getReplyTree(message, maxDepth));
     const replyCount = replies.length;
+    const ToggleArrow = open ? DownArrow : RightArrow;
 
     if (!replyCount) return null;
 
@@ -213,9 +212,11 @@ function ShowRepliesAccessory({ message }: { message: Message; }) {
                     e.stopPropagation();
                     setOpen(value => !value);
                 }}
+                aria-label={`${open ? "Hide" : "View"} ${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
                 aria-expanded={open}
             >
-                {open ? "Hide" : "View"} {replyCount} {replyCount === 1 ? "reply" : "replies"}
+                <ToggleArrow />
+                <span>{replyCount} {replyCount === 1 ? "reply" : "replies"}</span>
             </button>
             {open && (
                 <div className="vc-show-replies-thread">
@@ -231,6 +232,13 @@ function ShowRepliesAccessory({ message }: { message: Message; }) {
         </div>
     );
 }
+
+function ShowRepliesAccessoryGuard({ message }: { message: Message; }) {
+    return React.useContext(getInlineReplyContext())
+        ? null
+        : <ShowRepliesAccessory message={message} />;
+}
+
 export default definePlugin({
     name: "ShowReplies",
     description: "Adds a button to expose a message's replies",
@@ -239,8 +247,8 @@ export default definePlugin({
     settings,
     restartNeeded: true,
     renderMessageAccessory({ message }) {
-        if (message[IsInlineReply] || message.type !== 0 && message.type !== 19) return null;
+        if (message.type !== 0 && message.type !== 19) return null;
 
-        return <ShowRepliesAccessory message={message} />;
+        return <ShowRepliesAccessoryGuard message={message} />;
     }
 });
