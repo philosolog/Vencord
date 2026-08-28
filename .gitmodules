@@ -4,3 +4,6 @@
 [submodule "src/plugins/vencordYomitan"]
 	path = src/plugins/vencordYomitan
 	url = https://github.com/philosolog/vencordYomitan.git
+[submodule "src/plugins/hideServers"]
+	path = src/plugins/hideServers
+	url = https://github.com/philosolog/hideServers.git
