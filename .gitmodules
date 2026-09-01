@@ -7,3 +7,6 @@
 [submodule "src/plugins/hideServers"]
 	path = src/plugins/hideServers
 	url = https://github.com/philosolog/hideServers.git
+[submodule "src/plugins/betterGifLibrary"]
+	path = src/plugins/betterGifLibrary
+	url = https://github.com/philosolog/betterGifLibrary.git
